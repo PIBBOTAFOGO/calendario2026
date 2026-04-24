@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calendário 2026 · Igreja Batista de Botafogo</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --ink: #0D1F2D;
+  --parchment: #faf6ee;
+  --parchment-dark: #f0e8d8;
+  --gold-light: #4CBDC5;
+  --green-deep: #0A3D4A;
+  --green: #127080;
+  --slate: #3a4a5c;
+  --slate-light: #6b7e94;
+}
+body { font-family:'DM Sans',sans-serif; background:var(--ink); color:var(--ink); min-height:100vh; }
+#app { display:flex; flex-direction:column; height:100vh; overflow:hidden; }
+#header { background:var(--ink); border-bottom:1px solid rgba(255,255,255,0.07); padding:18px 32px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+#header .eyebrow { font-size:9px; font-weight:600; letter-spacing:0.22em; text-transform:uppercase; color:var(--gold-light); margin-bottom:3px; }
+#header h1 { font-family:'Playfair Display',serif; font-size:20px; color:#e8dcc8; font-weight:700; }
+#header .subtitle { font-size:11px; color:rgba(232,220,200,0.45); margin-top:2px; letter-spacing:0.04em; }
+#tabs { background:var(--ink); border-bottom:1px solid rgba(255,255,255,0.06); padding:0 32px; display:flex; gap:0; overflow-x:auto; flex-shrink:0; scrollbar-width:none; }
+#tabs::-webkit-scrollbar { display:none; }
+.tab { font-size:11px; font-weight:500; color:rgba(232,220,200,0.4); padding:12px 16px; cursor:pointer; border-bottom:2px solid transparent; transition:all 0.2s; white-space:nowrap; letter-spacing:0.04em; }
+.tab:hover { color:rgba(232,220,200,0.7); }
+.tab.active { color:var(--gold-light); border-bottom-color:var(--gold-light); font-weight:600; }
+#progress-bar { height:3px; background:var(--parchment-dark); flex-shrink:0; }
+#progress-fill { height:100%; background:linear-gradient(to right,var(--green),var(--gold-light)); transition:width 0.4s ease; }
+#main { flex:1; display:flex; overflow:hidden; background:var(--parchment); }
+#sidebar { width:210px; min-width:210px; background:var(--ink); border-right:1px solid rgba(255,255,255,0.06); display:flex; flex-direction:column; overflow-y:auto; padding:20px 16px; gap:5px; }
+#sidebar .sid-title { font-size:9px; font-weight:600; letter-spacing:0.2em; text-transform:uppercase; color:var(--gold-light); margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+#sidebar .sid-title::after { content:''; flex:1; height:1px; background:rgba(255,255,255,0.08); }
+.leg-item { display:flex; align-items:center; gap:8px; padding:4px 0; }
+.leg-swatch { width:12px; height:12px; border-radius:2px; flex-shrink:0; }
+.leg-swatch.empty { border:1px dashed rgba(232,220,200,0.25); background:transparent; }
+.leg-num { font-size:9px; font-weight:700; color:rgba(232,220,200,0.3); width:14px; flex-shrink:0; text-align:right; }
+.leg-label { font-size:10px; color:rgba(232,220,200,0.65); line-height:1.3; }
+#cal-area { flex:1; overflow-y:auto; padding:28px 32px; }
+#cal-area::-webkit-scrollbar { width:6px; }
+#cal-area::-webkit-scrollbar-thumb { background:var(--parchment-dark); border-radius:3px; }
+.mes-view { display:none; }
+.mes-view.active { display:block; }
+.mes-header { margin-bottom:20px; }
+.mes-eyebrow { font-size:9px; font-weight:600; letter-spacing:0.2em; text-transform:uppercase; color:#2E4A55; display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+.mes-eyebrow::before { content:''; width:24px; height:1px; background:var(--gold-light); }
+.mes-titulo { font-family:'Playfair Display',serif; font-size:32px; font-weight:900; color:var(--ink); line-height:1.05; }
+.mes-sub { font-size:12px; color:var(--slate-light); margin-top:6px; font-style:italic; }
+.dias-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-top:20px; }
+.dia-hdr { font-size:9px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:var(--slate-light); text-align:center; padding:6px 0; }
+.dia-hdr.dom { color:#9b7d4a; }
+.dia-cell { background:white; border-radius:8px; min-height:90px; padding:8px 7px 7px; box-shadow:0 1px 4px rgba(13,31,45,0.05); border:1.5px solid var(--parchment-dark); display:flex; flex-direction:column; gap:3px; transition:box-shadow 0.15s; overflow:hidden; }
+.dia-cell:hover { box-shadow:0 3px 12px rgba(13,31,45,0.12); }
+.dia-cell.dom { border-color:#d4c8b8; background:#fdfaf5; }
+.dia-cell.vazio { background:transparent; border:none; box-shadow:none; min-height:0; }
+.dia-num { font-size:13px; font-weight:700; color:var(--ink); line-height:1; margin-bottom:2px; }
+.dia-cell.dom .dia-num { color:var(--green-deep); }
+.dia-semana-label { font-size:8px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--slate-light); margin-bottom:3px; }
+.ev-tag { font-size:9px; font-weight:500; line-height:1.3; padding:2px 5px; border-radius:3px; }
+#controls { display:flex; align-items:center; justify-content:space-between; padding:12px 32px; background:var(--parchment); border-top:1px solid var(--parchment-dark); flex-shrink:0; }
+.nav-btn { background:var(--ink); color:var(--parchment); border:none; border-radius:6px; padding:9px 22px; font-size:12px; font-weight:500; font-family:'DM Sans',sans-serif; cursor:pointer; transition:all 0.2s; }
+.nav-btn:hover { background:var(--slate); }
+.nav-btn:disabled { opacity:0.3; cursor:default; }
+.nav-btn.primary { background:var(--green-deep); }
+.nav-btn.primary:hover { background:var(--green); }
+.mes-counter { font-size:12px; color:var(--slate-light); font-weight:500; letter-spacing:0.03em; }
+.mes-counter span { color:var(--slate); font-weight:700; }
+.kbd-hint { font-size:10px; color:var(--slate-light); display:flex; align-items:center; gap:5px; }
+.tab.tab-comissao { color:#e8c97a; border-left:1px solid rgba(255,255,255,0.1); margin-left:8px; padding-left:18px; font-weight:600; letter-spacing:0.06em; }
+.tab.tab-comissao:hover { color:#f5dea0; background:rgba(232,200,120,0.07); }
+.comissao-section { border-radius:10px; overflow:hidden; border:1.5px solid var(--parchment-dark); }
+.comissao-section-header { display:flex; align-items:center; gap:12px; padding:12px 18px; }
+.comissao-section-title { font-family:'Playfair Display',serif; font-size:15px; font-weight:700; }
+.comissao-count { font-size:10px; font-weight:600; padding:2px 8px; border-radius:10px; opacity:0.75; }
+.comissao-events { display:flex; flex-direction:column; gap:0; }
+.comissao-event-row { display:flex; align-items:baseline; gap:14px; padding:9px 18px; border-top:1px solid var(--parchment-dark); background:white; }
+.comissao-event-row:last-child { border-bottom:none; }
+.comissao-event-date { font-size:10px; font-weight:600; color:var(--slate-light); white-space:nowrap; min-width:90px; }
+.comissao-event-txt { font-size:11px; color:var(--ink); line-height:1.4; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="header">
+    <div>
+      <div class="eyebrow">Igreja Batista de Botafogo</div>
+      <h1>Calendário <em style="color:var(--gold-light);font-style:normal;">2026</em></h1>
+      <div class="subtitle">Junho — Dezembro · Igreja em Células</div>
+    </div>
+    <div style="font-size:10px;color:rgba(232,220,200,0.35);text-align:right;line-height:1.6;">← → para navegar<br>clique no mês para ir direto</div>
+  </div>
+  <div id="tabs">
+    <div class="tab active" onclick="goTo(0)">Junho</div>
+    <div class="tab" onclick="goTo(1)">Julho</div>
+    <div class="tab" onclick="goTo(2)">Agosto</div>
+    <div class="tab" onclick="goTo(3)">Setembro</div>
+    <div class="tab" onclick="goTo(4)">Outubro</div>
+    <div class="tab" onclick="goTo(5)">Novembro</div>
+    <div class="tab" onclick="goTo(6)">Dezembro</div>
+    <div class="tab tab-comissao" onclick="openComissao()">Atividades por Categoria ↗</div>
+  </div>
+
+  <!-- Modal Atividades por Comissão -->
+  <div id="modal-comissao" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(13,31,45,0.82);backdrop-filter:blur(4px);overflow-y:auto;padding:32px 20px;">
+    <div style="max-width:860px;margin:0 auto;background:var(--parchment);border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.5);">
+      <!-- Modal header -->
+      <div style="background:var(--ink);padding:24px 32px;display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-size:9px;font-weight:600;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold-light);margin-bottom:4px;">Igreja Batista de Botafogo · 2026</div>
+          <div style="font-family:'Playfair Display',serif;font-size:22px;color:#e8dcc8;font-weight:700;">Atividades por Categoria</div>
+        </div>
+        <button onclick="closeComissao()" style="background:rgba(255,255,255,0.08);border:none;color:rgba(232,220,200,0.7);font-size:20px;width:36px;height:36px;border-radius:8px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">✕</button>
+      </div>
+      <!-- Modal body -->
+      <div id="comissao-body" style="padding:28px 32px;display:flex;flex-direction:column;gap:24px;"></div>
+    </div>
+  </div>
+  <div id="progress-bar"><div id="progress-fill"></div></div>
+  <div id="main">
+    <div id="sidebar">
+      <div class="sid-title">Legenda</div>
+      <div class="leg-item"><span class="leg-num">1</span><div class="leg-swatch" style="background:#09BBD3;"></div><span class="leg-label">Células</span></div>
+      <div class="leg-item"><span class="leg-num">2</span><div class="leg-swatch" style="background:#85200C;"></div><span class="leg-label">Ação Social</span></div>
+      <div class="leg-item"><span class="leg-num">3</span><div class="leg-swatch" style="background:#38761D;"></div><span class="leg-label">Missões</span></div>
+      <div class="leg-item"><span class="leg-num">4</span><div class="leg-swatch" style="background:#434343;"></div><span class="leg-label">Comiss. Eventos Especiais</span></div>
+      <div class="leg-item"><span class="leg-num">5</span><div class="leg-swatch" style="background:#FF00FF;"></div><span class="leg-label">Mulheres</span></div>
+      <div class="leg-item"><span class="leg-num">6</span><div class="leg-swatch" style="background:#0000FF;"></div><span class="leg-label">Homens</span></div>
+      <div class="leg-item"><span class="leg-num">7</span><div class="leg-swatch" style="background:#FF6600;"></div><span class="leg-label">Terceira Idade</span></div>
+      <div class="leg-item"><span class="leg-num">8</span><div class="leg-swatch" style="background:#FFFF00;border:1px solid #bbb;"></div><span class="leg-label">Crianças</span></div>
+      <div class="leg-item"><span class="leg-num">9</span><div class="leg-swatch" style="background:#FF0000;"></div><span class="leg-label">Juventude</span></div>
+      <div class="leg-item"><span class="leg-num">10</span><div class="leg-swatch" style="background:#9900FF;"></div><span class="leg-label">Adolescentes</span></div>
+      <div class="leg-item"><span class="leg-num">11</span><div class="leg-swatch" style="background:#d4ebf0;"></div><span class="leg-label">PibBotafogo</span></div>
+    </div>
+    <div id="cal-area"></div>
+  </div>
+  <div id="controls">
+    <button class="nav-btn" id="prev-btn" onclick="navigate(-1)" disabled>← Anterior</button>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+      <div class="mes-counter"><span id="mes-nome-cur">Junho</span> · 2026</div>
+      <div class="kbd-hint"><kbd>←</kbd><kbd>→</kbd> navegar</div>
+    </div>
+    <button class="nav-btn primary" id="next-btn" onclick="navigate(1)">Próximo →</button>
+  </div>
+</div>
+<script>
+const AGENDA={"2026-06-01":[{"txt":"15:00 - Oração e Comunhão","color":null}],"2026-06-02":[{"txt":"Culto de Líderes","color":"09BBD3"}],"2026-06-03":[{"txt":"20:00 - Quarta do Encontro","color":null}],"2026-06-04":[{"txt":"Células","color":"09BBD3"}],"2026-06-05":[{"txt":"Células","color":"09BBD3"}],"2026-06-06":[{"txt":"Casa Acolhedora","color":"990000"},{"txt":"08:30 - Café de Pastores e Seminaristas","color":"d4ebf0"},{"txt":"","color":"434343"}],"2026-06-07":[{"txt":"09:00 - EBD","color":null},{"txt":"10:30 - Culto da Manhã","color":null},{"txt":"18:30 - Culto da Noite (ceia)","color":"990000"}],"2026-06-08":[{"txt":"15:00 - Oração e Comunhão","color":null}],"2026-06-09":[],"2026-06-10":[{"txt":"20:00 - Quarta do Encontro","color":null}],"2026-06-11":[{"txt":"Células","color":"09BBD3"}],"2026-06-12":[{"txt":"Células","color":"09BBD3"},{"txt":"Celulão GD Jovens Eu + 1","color":"FF0000"}],"2026-06-13":[{"txt":"Casa Acolhedora","color":"990000"}],"2026-06-14":[{"txt":"09:00 - EBD Especial de Casais","color":"434343"},{"txt":"10:30 - Culto da Manhã","color":null},{"txt":"Reunião GDs","color":"09BBD3"},{"txt":"18:30 - Culto da Noite","color":null}],"2026-06-15":[{"txt":"15:00 - Oração e Comunhão","color":null}],"2026-06-16":[],"2026-06-17":[{"txt":"20:00 - Quarta do Encontro","color":null}],"2026-06-18":[{"txt":"Células","color":"09BBD3"}],"2026-06-19":[{"txt":"Células","color":"09BBD3"}],"2026-06-20":[{"txt":"Casa Acolhedora","color":"990000"},{"txt":"Congresso Elas","color":"FF00FF"}],"2026-06-21":[{"txt":"09:00 - EBD","color":null},{"txt":"10:30 - Culto da Manhã (Congresso Elas)","color":"FF00FF"},{"txt":"18:30 - Culto da Noite (Congresso Elas)","color":"FF00FF"}],"2026-06-22":[{"txt":"15:00 - Oração e Comunhão","color":null}],"2026-06-23":[],"2026-06-24":[{"txt":"20:00 - Quarta do Encontro (Assembleia)","color":"d4ebf0"}],"2026-06-25":[{"txt":"Células","color":"09BBD3"}],"2026-06-26":[{"txt":"Células","color":"09BBD3"},{"txt":"Vigília de Oração (Homens)","color":"0000FF"}],"2026-06-27":[{"txt":"Casa Acolhedora","color":"990000"},{"txt":"17:00 - Culto Teens","color":"9900FF"}],"2026-06-28":[{"txt":"09:00 - EBD","color":null},{"txt":"10:30 - Culto da Manhã","color":null},{"txt":"18:30 - Culto da Noite (Festa da Multiplicação)","color":"09BBD3"}],"2026-06-29":[{"txt":"15:00 - Oração e Comunhão","color":null}],"2026-06-30":[],"2026-07-01":[{"txt":"20:00 - Quarta do Encontro","color":null}],"2026-07-02":[{"txt":"Células","color":"09BBD3"}],"2026-07-03":[{"txt":"Células","color":"09BBD3"}],"2026-07-04":[{"txt":"Casa Acolhedora","color":"990000"},{"txt":"08:30 - Café de Pastores e Seminaristas","color":"d4ebf0"},{"txt":"Eu e Minha Célula","color":"09BBD3"}],"2026-07-05":[{"txt":"09:00 - EBD","color":null},{"txt":"10:30 - Culto da Manhã (ceia)","color":"990000"},{"txt":"18:30 - Culto da Noite","color":null}],"2026-07-06":[],"2026-07-07":[],"2026-07-08":[{"txt":"20:00 - Quarta do Encontro","color":null}],"2026-07-09":[{"txt":"Células","color":"09BBD3"}],"2026-07-10":[{"txt":"Células","color":"09BBD3"},{"txt":"Celulão GD em Pares Eu + 1 (Homens e Mulheres)","color":null,"gradient":"0000FF,FF00FF"}],"2026-07-11":[{"txt":"Casa Acolhedora","color":"990000"}],"2026-07-12":[{"txt":"09:00 - EBD","color":null},{"txt":"10:30 - Culto da Manhã (Formatura Escola de Líderes)","color":"09BBD3"},{"txt":"Reunião GDs","color":"09BBD3"},{"txt":"18:30 - Culto da Noite","color":null}],"2026-07-13":[],"2026-07-14":[],"2026-07-15":[{"txt":"20:00 - Quarta do Encontro","color":null}],"2026-07-16":[{"txt":"Células","color":"09BBD3"}],"2026-07-17":[{"txt":"Células","color":"09BBD3"},{"txt":"Retiro dos Homens","color":"0000FF"}],"2026-07-18":[{"txt":"Casa Acolhedora","color":"990000"},{"txt":"Retiro dos Homens","color":"0000FF"}],"2026-07-19":[{"txt":"09:00 - EBD","color":null},{"txt":"10:30 - Culto da Manhã","color":null},{"txt":"18:30 - Culto da Noite","color":null},{"txt":"Retiro dos Homens","color":"0000FF"}],"2026-07-20":[],"2026-07-21":[],"2026-07-22":[{"txt":"20:00 - Quarta do Encontro (Assembleia)","color":"d4ebf0"}],"2026-07-23":[{"txt":"Células (Dia do Amigo na Célula)","color":"09BBD3"}],"2026-07-24":[{"txt":"Células (Dia do Amigo na Célula)","color":"09BBD3"}],"2026-07-25":[{"txt":"Casa Acolhedora","color":"990000"},{"txt":"17:00 - Culto Teens","color":"9900FF"}],"2026-07-26":[{"txt":"09:00 - EBD","color":null},{"txt":"10:30 - Culto da Manhã","color":null},{"txt":"18:30 - Culto da Noite","color":null}],"2026-07-27":[],"2026-07-28":[],"2026-07-29":[{"txt":"20:00 - Quarta do Encontro","color":null}],"2026-07-30":[{"txt":"Células","color":"09BBD3"}],"2026-07-31":[{"txt":"Células","color":"09BBD3"},{"txt":"Vigília de Oração (Recepção)","color":"d4ebf0"}],"2026-08-01":[{"txt":"Casa Acolhedora","color":"990000"},{"txt":"08:30 - Café de Pastores e Seminaristas","color":"d4ebf0"}],"2026-08-02":[{"txt":"09:00 - EBD","color":null},{"txt":"10:30 - Culto da Manhã","color":null},{"txt":"Início Escola de Líderes","color":"09BBD3"},{"txt":"18:30 - Culto da Noite (ceia)","color":"990000"}],"2026-08-03":[{"txt":"15:00 - Oração e Comunhão","color":null}],"2026-08-04":[],"2026-08-05":[{"txt":"20:00 - Quarta do Encontro","color":null}],"2026-08-06":[{"txt":"Células","color":"09BBD3"}],"2026-08-07":[{"txt":"Células","color":"09BBD3"}],"2026-08-08":[{"txt":"Casa Acolhedora","color":"990000"},{"txt":"Culto de Líderes","color":"09BBD3"}],"2026-08-09":[{"txt":"09:00 - EBD","color":null},{"txt":"10:30 - Culto da Manhã (Dia dos Pais)","color":"FFFF00"},{"txt":"Reunião GDs","color":"09BBD3"},{"txt":"18:30 - Culto da Noite","color":null}],"2026-08-10":[{"txt":"15:00 - Oração e Comunhão","color":null}],"2026-08-11":[],"2026-08-12":[{"txt":"20:00 - Quarta do Encontro","color":null}],"2026-08-13":[{"txt":"Células","color":"09BBD3"}],"2026-08-14":[{"txt":"Células","color":"09BBD3"},{"txt":"Celulão GD Jovens Eu + 1","color":"FF0000"}],"2026-08-15":[{"txt":"Casa Acolhedora","color":"990000"},{"txt":"Dia de Realeza Elas Kids","color":"FF00FF"}],"2026-08-16":[{"txt":"09:00 - EBD","color":null},{"txt":"10:30 - Culto da Manhã (Adolescentes)","color":"9900FF"},{"txt":"18:30 - Culto da Noite","color":null}],"2026-08-17":[{"txt":"15:00 - Oração e Comunhão","color":null}],"2026-08-18":[],"2026-08-19":[{"txt":"20:00 - Quarta do Encontro","color":null}],"2026-08-20":[{"txt":"Células","color":"09BBD3"}],"2026-08-21":[{"txt":"Células","color":"09BBD3"}],"2026-08-22":[{"txt":"Casa Acolhedora","color":"990000"}],"2026-08-23":[{"txt":"09:00 - EBD","color":null},{"txt":"10:30 - Culto da Manhã","color":null},{"txt":"18:30 - Culto da Noite","color":null}],"2026-08-24":[{"txt":"15:00 - Oração e Comunhão","color":null}],"2026-08-25":[],"2026-08-26":[{"txt":"20:00 - Quarta do Encontro (Assembleia)","color":"d4ebf0"}],"2026-08-27":[{"txt":"Células","color":"09BBD3"}],"2026-08-28":[{"txt":"Células","color":"09BBD3"},{"txt":"Vigília de Oração (Jovens e Adolescentes)","color":null,"gradient":"FF0000,9900FF"}],"2026-08-29":[{"txt":"Casa Acolhedora","color":"990000"},{"txt":"Flame XP","color":"FF0000"}],"2026-08-30":[{"txt":"09:00 - EBD","color":null},{"txt":"10:30 - Culto da Manhã (Flame XP)","color":"FF0000"},{"txt":"18:30 - Culto da Noite (Flame XP)","color":"FF0000"}],"2026-08-31":[{"txt":"15:00 - Oração e Comunhão","color":null}],"2026-09-01":[],"2026-09-02":[{"txt":"20:00 - Quarta do Encontro","color":null}],"2026-09-03":[{"txt":"Células","color":"09BBD3"}],"2026-09-04":[{"txt":"Células","color":"09BBD3"},{"txt":"Celulão GD em Pares Eu + 1 (Homens e Mulheres)","color":null,"gradient":"0000FF,FF00FF"}],"2026-09-05":[{"txt":"Casa Acolhedora","color":"990000"},{"txt":"08:30 - Café de Pastores e Seminaristas","color":"d4ebf0"},{"txt":"Eu e Minha Célula","color":"09BBD3"}],"2026-09-06":[{"txt":"09:00 - EBD","color":null},{"txt":"10:30 - Culto da Manhã (ceia) + Abertura MN","color":null,"gradient":"990000,38761D"},{"txt":"18:30 - Culto da Noite","color":null}],"2026-09-07":[{"txt":"15:00 - Oração e Comunhão","color":null}],"2026-09-08":[],"2026-09-09":[{"txt":"20:00 - Quarta do Encontro","color":null}],"2026-09-10":[{"txt":"Células","color":"09BBD3"}],"2026-09-11":[{"txt":"Células","color":"09BBD3"}],"2026-09-12":[{"txt":"Casa Acolhedora","color":"990000"},{"txt":"Ação Social no Catumbi","color":"990000"}],"2026-09-13":[{"txt":"09:00 - EBD","color":null},{"txt":"10:30 - Culto da Manhã","color":null},{"txt":"Reunião GDs","color":"09BBD3"},{"txt":"18:30 - Culto da Noite (Aniversário do Catumbi)","color":"d4ebf0"}],"2026-09-14":[{"txt":"15:00 - Oração e Comunhão","color":null}],"2026-09-15":[],"2026-09-16":[{"txt":"20:00 - Quarta do Encontro","color":null}],"2026-09-17":[{"txt":"Células (Minha Célula em Missão)","color":"38761D"}],"2026-09-18":[{"txt":"Células (Minha Célula em Missão)","color":"38761D"}],"2026-09-19":[{"txt":"Casa Acolhedora","color":"990000"},{"txt":"17:00 - Culto Teens","color":"9900FF"}],"2026-09-20":[{"txt":"09:00 - EBD","color":null},{"txt":"10:30 - Culto da Manhã (Set. Amarelo)","color":"990000"},{"txt":"18:30 - Culto da Noite (Set. Amarelo)","color":"990000"}],"2026-09-21":[{"txt":"15:00 - Oração e Comunhão","color":null}],"2026-09-22":[],"2026-09-23":[{"txt":"20:00 - Quarta do Encontro (Assembleia)","color":"d4ebf0"}],"2026-09-24":[{"txt":"Células","color":"09BBD3"}],"2026-09-25":[{"txt":"Células","color":"09BBD3"},{"txt":"Vigília de Oração (Missões)","color":"38761D"}],"2026-09-26":[{"txt":"Casa Acolhedora","color":"990000"}],"2026-09-27":[{"txt":"09:00 - EBD","color":null},{"txt":"10:30 - Culto da Manhã","color":null},{"txt":"18:30 - Culto da Noite","color":null}],"2026-09-28":[{"txt":"15:00 - Oração e Comunhão","color":null}],"2026-09-29":[],"2026-09-30":[{"txt":"20:00 - Quarta do Encontro","color":null}],"2026-10-01":[{"txt":"Células","color":"09BBD3"}],"2026-10-02":[{"txt":"Células","color":"09BBD3"},{"txt":"Celulão GD Jovens Eu + 1","color":"FF0000"}],"2026-10-03":[{"txt":"Casa Acolhedora","color":"990000"},{"txt":"08:30 - Café de Pastores e Seminaristas","color":"d4ebf0"},{"txt":"Culto de Líderes","color":"09BBD3"}],"2026-10-04":[{"txt":"09:00 - EBD","color":null},{"txt":"10:30 - Culto da Manhã (Encerramento MN)","color":"38761D"},{"txt":"18:30 - Culto da Noite (ceia)","color":"990000"}],"2026-10-05":[{"txt":"15:00 - Oração e Comunhão","color":null}],"2026-10-06":[],"2026-10-07":[{"txt":"20:00 - Quarta do Encontro","color":null}],"2026-10-08":[{"txt":"Células","color":"09BBD3"}],"2026-10-09":[{"txt":"Células","color":"09BBD3"},{"txt":"Acampadentro Semear","color":"FFFF00"}],"2026-10-10":[{"txt":"Casa Acolhedora","color":"990000"},{"txt":"Acampadentro Semear","color":"FFFF00"}],"2026-10-11":[{"txt":"09:00 - EBD","color":null},{"txt":"10:30 - Culto da Manhã (Semear)","color":"FFFF00"},{"txt":"Reunião GDs","color":"09BBD3"},{"txt":"18:30 - Culto da Noite","color":null}],"2026-10-12":[{"txt":"15:00 - Oração e Comunhão","color":null}],"2026-10-13":[],"2026-10-14":[{"txt":"20:00 - Quarta do Encontro","color":null}],"2026-10-15":[{"txt":"Células","color":"09BBD3"}],"2026-10-16":[{"txt":"Células","color":"09BBD3"}],"2026-10-17":[{"txt":"Casa Acolhedora","color":"990000"}],"2026-10-18":[{"txt":"09:00 - EBD","color":null},{"txt":"10:30 - Culto da Manhã","color":null},{"txt":"18:30 - Culto da Noite","color":null}],"2026-10-19":[{"txt":"15:00 - Oração e Comunhão","color":null}],"2026-10-20":[],"2026-10-21":[{"txt":"20:00 - Quarta do Encontro","color":null}],"2026-10-22":[{"txt":"Células","color":"09BBD3"}],"2026-10-23":[{"txt":"Células","color":"09BBD3"}],"2026-10-24":[{"txt":"Casa Acolhedora","color":"990000"},{"txt":"17:00 - Culto Teens","color":"9900FF"}],"2026-10-25":[{"txt":"09:00 - EBD","color":null},{"txt":"10:30 - Culto da Manhã","color":null},{"txt":"18:30 - Culto da Noite","color":null}],"2026-10-26":[{"txt":"15:00 - Oração e Comunhão","color":null}],"2026-10-27":[],"2026-10-28":[{"txt":"20:00 - Quarta do Encontro (Assembleia)","color":"d4ebf0"}],"2026-10-29":[{"txt":"Células","color":"09BBD3"}],"2026-10-30":[{"txt":"Células","color":"09BBD3"},{"txt":"Vigília de Oração (Ação Social)","color":"990000"}],"2026-10-31":[{"txt":"Casa Acolhedora","color":"990000"}],"2026-11-01":[{"txt":"09:00 - EBD","color":null},{"txt":"10:30 - Culto da Manhã (ceia)","color":"990000"},{"txt":"Reunião GDs","color":"09BBD3"},{"txt":"18:30 - Culto da Noite","color":null}],"2026-11-02":[{"txt":"15:00 - Oração e Comunhão","color":null}],"2026-11-03":[],"2026-11-04":[{"txt":"20:00 - Quarta do Encontro","color":null}],"2026-11-05":[{"txt":"Células","color":"09BBD3"}],"2026-11-06":[{"txt":"Células","color":"09BBD3"}],"2026-11-07":[{"txt":"Casa Acolhedora","color":"990000"},{"txt":"08:30 - Café de Pastores e Seminaristas","color":"d4ebf0"},{"txt":"Aniversário PIBB","color":"434343"}],"2026-11-08":[{"txt":"09:00 - EBD","color":null},{"txt":"10:30 - Culto da Manhã (Aniversário PIBB)","color":"434343"},{"txt":"18:30 - Culto da Noite (Aniversário PIBB)","color":"434343"}],"2026-11-09":[{"txt":"15:00 - Oração e Comunhão","color":null}],"2026-11-10":[],"2026-11-11":[{"txt":"20:00 - Quarta do Encontro","color":null}],"2026-11-12":[{"txt":"Células","color":"09BBD3"}],"2026-11-13":[{"txt":"Células","color":"09BBD3"},{"txt":"Celulão GD em Pares Eu + 1 (Homens e Mulheres)","color":null,"gradient":"0000FF,FF00FF"}],"2026-11-14":[{"txt":"Casa Acolhedora","color":"990000"}],"2026-11-15":[{"txt":"09:00 - EBD","color":null},{"txt":"10:30 - Culto da Manhã (Formatura Escola de Líderes)","color":"09BBD3"},{"txt":"18:30 - Culto da Noite","color":null}],"2026-11-16":[{"txt":"15:00 - Oração e Comunhão","color":null}],"2026-11-17":[],"2026-11-18":[{"txt":"20:00 - Quarta do Encontro","color":null}],"2026-11-19":[{"txt":"Células","color":"09BBD3"}],"2026-11-20":[{"txt":"Células","color":"09BBD3"}],"2026-11-21":[{"txt":"Casa Acolhedora","color":"990000"},{"txt":"17:00 - Culto Teens","color":"9900FF"}],"2026-11-22":[{"txt":"09:00 - EBD","color":null},{"txt":"10:30 - Culto da Manhã","color":null},{"txt":"18:30 - Culto da Noite","color":null}],"2026-11-23":[{"txt":"15:00 - Oração e Comunhão","color":null}],"2026-11-24":[],"2026-11-25":[{"txt":"20:00 - Quarta do Encontro (Assembleia)","color":"d4ebf0"}],"2026-11-26":[{"txt":"Células","color":"09BBD3"}],"2026-11-27":[{"txt":"Células","color":"09BBD3"},{"txt":"Vigília de Oração (louvor)","color":"d4ebf0"}],"2026-11-28":[{"txt":"Casa Acolhedora","color":"990000"},{"txt":"Eu e minha célula","color":"09BBD3"}],"2026-11-29":[{"txt":"09:00 - EBD","color":null},{"txt":"10:30 - Culto da Manhã (profissão de fé)","color":"434343"},{"txt":"18:30 - Culto da Noite (batismos)","color":"434343"}],"2026-11-30":[{"txt":"15:00 - Oração e Comunhão","color":null}],"2026-12-01":[],"2026-12-02":[{"txt":"20:00 - Quarta do Encontro","color":null}],"2026-12-03":[{"txt":"Células","color":"09BBD3"}],"2026-12-04":[{"txt":"Células","color":"09BBD3"},{"txt":"Celulão GD Jovens Eu + 1","color":"FF0000"}],"2026-12-05":[{"txt":"Casa Acolhedora","color":"990000"},{"txt":"08:30 - Café de Pastores e Seminaristas","color":"d4ebf0"},{"txt":"Ensaio de Natal","color":"434343"}],"2026-12-06":[{"txt":"09:00 - EBD","color":null},{"txt":"10:30 - Culto da Manhã","color":null},{"txt":"18:30 - Culto da Noite (ceia)","color":"990000"}],"2026-12-07":[{"txt":"15:00 - Oração e Comunhão","color":null}],"2026-12-08":[],"2026-12-09":[{"txt":"20:00 - Quarta do Encontro","color":null}],"2026-12-10":[{"txt":"Células","color":"09BBD3"}],"2026-12-11":[{"txt":"Encerramento das Células","color":"09BBD3"},{"txt":"Vigília de Oração Natalina","color":"434343"}],"2026-12-12":[{"txt":"Casa Acolhedora","color":"990000"},{"txt":"Ensaio de Natal","color":"434343"}],"2026-12-13":[{"txt":"09:00 - EBD (Encerramento das Classes)","color":"d4ebf0"},{"txt":"10:30 - Culto da Manhã","color":null},{"txt":"18:30 - Culto da Noite","color":null}],"2026-12-14":[{"txt":"15:00 - Oração e Comunhão","color":null}],"2026-12-15":[],"2026-12-16":[{"txt":"20:00 - Quarta do Encontro","color":null}],"2026-12-17":[{"txt":"Encerramento das Células","color":"09BBD3"}],"2026-12-18":[{"txt":"Confraternização das Células","color":"09BBD3"}],"2026-12-19":[{"txt":"Casa Acolhedora","color":"990000"},{"txt":"Ensaio de Natal","color":"434343"}],"2026-12-20":[{"txt":"09:00 - EBD","color":null},{"txt":"10:30 - Culto Natalino (manhã)","color":"434343"},{"txt":"18:30 - Musical de Natal (noite)","color":"434343"}],"2026-12-21":[{"txt":"15:00 - Oração e Comunhão","color":null}],"2026-12-22":[],"2026-12-23":[{"txt":"20:00 - Quarta do Encontro (Assembleia)","color":"d4ebf0"}],"2026-12-24":[],"2026-12-25":[],"2026-12-26":[{"txt":"Casa Acolhedora","color":"990000"}],"2026-12-27":[{"txt":"09:00 - EBD","color":null},{"txt":"10:30 - Culto da Manhã","color":null},{"txt":"18:30 - Culto da Noite","color":null}],"2026-12-28":[{"txt":"15:00 - Oração e Comunhão","color":null}],"2026-12-29":[],"2026-12-30":[{"txt":"20:00 - Quarta do Encontro","color":null}],"2026-12-31":[{"txt":"Culto da Virada","color":"434343"}]};
+
+const MESES=[{key:'Junho',ano:2026,mes:6,sub:''},{key:'Julho',ano:2026,mes:7,sub:''},{key:'Agosto',ano:2026,mes:8,sub:''},{key:'Setembro',ano:2026,mes:9,sub:''},{key:'Outubro',ano:2026,mes:10,sub:''},{key:'Novembro',ano:2026,mes:11,sub:''},{key:'Dezembro',ano:2026,mes:12,sub:''}];
+const HDRS=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+const IS_DOM=[false,false,false,false,false,false,true];
+
+function pad(n){return String(n).padStart(2,'0');}
+function dateKey(y,m,d){return `${y}-${pad(m)}-${pad(d)}`;}
+function offsetMon(dt){const d=dt.getDay();return d===0?6:d-1;}
+function daysInMonth(y,m){return new Date(y,m,0).getDate();}
+function txtColor(hex){
+  if(!hex)return null;
+  const r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16);
+  return(0.299*r+0.587*g+0.114*b)>160?'#0D1F2D':'#ffffff';
+}
+
+let cur=0;
+
+function buildCalendario(){
+  const area=document.getElementById('cal-area');
+  area.innerHTML='';
+  MESES.forEach(({key,ano,mes,sub},idx)=>{
+    const view=document.createElement('div');
+    view.className='mes-view'+(idx===0?' active':'');
+    view.id=`mes-${idx}`;
+    view.innerHTML=`<div class="mes-header"><div class="mes-eyebrow">2026</div><div class="mes-titulo">${key}</div><div class="mes-sub">${sub}</div></div>`;
+    const grid=document.createElement('div');
+    grid.className='dias-grid';
+    HDRS.forEach((h,i)=>{
+      const el=document.createElement('div');
+      el.className='dia-hdr'+(IS_DOM[i]?' dom':'');
+      el.textContent=h;
+      grid.appendChild(el);
+    });
+    const first=new Date(ano,mes-1,1);
+    const off=offsetMon(first);
+    for(let i=0;i<off;i++){const e=document.createElement('div');e.className='dia-cell vazio';grid.appendChild(e);}
+    const total=daysInMonth(ano,mes);
+    for(let d=1;d<=total;d++){
+      const jsDate=new Date(ano,mes-1,d);
+      const isSun=jsDate.getDay()===0;
+      const evs=AGENDA[dateKey(ano,mes,d)]||[];
+      const cell=document.createElement('div');
+      cell.className='dia-cell'+(isSun?' dom':'');
+      const numEl=document.createElement('div');numEl.className='dia-num';numEl.textContent=d;cell.appendChild(numEl);
+      const semEl=document.createElement('div');semEl.className='dia-semana-label';semEl.textContent=HDRS[offsetMon(jsDate)];cell.appendChild(semEl);
+      evs.forEach(ev=>{
+        if(!ev.txt||!ev.txt.trim())return;
+        const tag=document.createElement('div');
+        tag.className='ev-tag';
+        tag.textContent=ev.txt;
+        if(ev.gradient){
+          const cols=ev.gradient.split(',');
+          tag.style.backgroundImage='linear-gradient(to right,#'+cols[0]+',#'+cols[1]+')';
+          tag.style.color='#ffffff';
+        } else if(ev.color){
+          tag.style.backgroundColor='#'+ev.color;
+          tag.style.color=txtColor(ev.color);
+        } else {tag.style.color='#546E7A';}
+        cell.appendChild(tag);
+      });
+      grid.appendChild(cell);
+    }
+    view.appendChild(grid);
+    area.appendChild(view);
+  });
+}
+
+function goTo(idx){
+  if(idx<0||idx>=MESES.length)return;
+  document.getElementById(`mes-${cur}`).classList.remove('active');
+  document.querySelectorAll('.tab')[cur].classList.remove('active');
+  cur=idx;
+  document.getElementById(`mes-${cur}`).classList.add('active');
+  document.querySelectorAll('.tab')[cur].classList.add('active');
+  document.getElementById('mes-nome-cur').textContent=MESES[cur].key;
+  document.getElementById('prev-btn').disabled=cur===0;
+  document.getElementById('next-btn').disabled=cur===MESES.length-1;
+  document.getElementById('progress-fill').style.width=((cur/(MESES.length-1))*100)+'%';
+  document.querySelectorAll('.tab')[cur].scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+  document.getElementById('cal-area').scrollTop=0;
+}
+function navigate(dir){goTo(cur+dir);}
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight')navigate(1);if(e.key==='ArrowLeft')navigate(-1);});
+const COMISSOES = [
+  { label: 'Células',                  color: '09BBD3', textColor: '#0D1F2D' },
+  { label: 'Ação Social',              color: '85200C', altColor: '990000', textColor: '#ffffff' },
+  { label: 'Missões',                  color: '38761D', textColor: '#ffffff' },
+  { label: 'Comissão de Eventos Especiais', color: '434343', textColor: '#ffffff' },
+  { label: 'Mulheres',                 color: 'FF00FF', textColor: '#0D1F2D' },
+  { label: 'Homens',                   color: '0000FF', textColor: '#ffffff' },
+  { label: 'Terceira Idade',           color: 'FF6600', textColor: '#ffffff' },
+  { label: 'Crianças',                 color: 'FFFF00', textColor: '#0D1F2D' },
+  { label: 'Juventude',                color: 'FF0000', textColor: '#ffffff' },
+  { label: 'Adolescentes',             color: '9900FF', textColor: '#ffffff' },
+  { label: 'PibBotafogo',              color: 'd4ebf0', textColor: '#0D1F2D' },
+];
+
+const MESES_NOMES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+// Returns true if a day's events are ONLY the plain "Células" entry (no other colored events)
+function isPureCelulaDay(evs) {
+  const withColor = evs.filter(ev => ev.txt && ev.txt.trim() && (ev.color || ev.gradient));
+  return withColor.length > 0 && withColor.every(ev => {
+    const isCelula = ev.color && ev.color.toLowerCase() === '09bbd3' && !ev.gradient;
+    const txt = ev.txt.trim().toLowerCase();
+    // Only flag as "pure" if the text is the generic "Células" entry (not a named special event like Encerramento or Confraternização)
+    const isGeneric = txt === 'células';
+    return isCelula && isGeneric;
+  });
+}
+
+function buildComissao() {
+  const body = document.getElementById('comissao-body');
+  body.innerHTML = '';
+
+  COMISSOES.forEach(com => {
+    const matchColors = [com.color.toLowerCase()];
+    if (com.altColor) matchColors.push(com.altColor.toLowerCase());
+
+    const isCelulaCat = com.color.toLowerCase() === '09bbd3';
+
+    const events = [];
+    Object.entries(AGENDA).forEach(([dateStr, evs]) => {
+      const [y, m, d] = dateStr.split('-').map(Number);
+
+      // For Células category: skip days that are pure generic célula entries
+      if (isCelulaCat && isPureCelulaDay(evs)) return;
+
+      evs.forEach(ev => {
+        if (!ev.txt || !ev.txt.trim()) return;
+        const txtLower = ev.txt.trim().toLowerCase();
+        // Global exclusions (applied to all categories)
+        if (txtLower === 'casa acolhedora') return;
+        if (txtLower === 'escola de líderes' || txtLower === 'escola de lideres') return;
+        const evColor = ev.color ? ev.color.toLowerCase() : null;
+        const evGrad = ev.gradient ? ev.gradient.toLowerCase() : null;
+        const matched = evColor && matchColors.includes(evColor);
+        const gradMatched = evGrad && matchColors.some(c => evGrad.includes(c));
+        if (matched || gradMatched) {
+          // For Células: skip if this specific event is just generic "Células" text on a special day
+          if (isCelulaCat) {
+            const txt = ev.txt.trim().toLowerCase();
+            const isGeneric = txt === 'células';
+            if (isGeneric) return;
+          }
+          events.push({ date: new Date(y, m-1, d), dateStr, txt: ev.txt, ev });
+        }
+      });
+    });
+
+    if (events.length === 0) return;
+    events.sort((a, b) => a.date - b.date);
+
+    const headerBg = '#' + com.color;
+    const headerText = com.textColor;
+
+    const section = document.createElement('div');
+    section.className = 'comissao-section';
+
+    // Accordion header (always visible)
+    const hdr = document.createElement('div');
+    hdr.className = 'comissao-section-header';
+    hdr.style.cssText = `background:${headerBg};cursor:pointer;user-select:none;`;
+
+    const swatch = document.createElement('div');
+    swatch.style.cssText = `width:10px;height:10px;border-radius:2px;background:rgba(255,255,255,0.3);flex-shrink:0;`;
+
+    const title = document.createElement('div');
+    title.className = 'comissao-section-title';
+    title.style.cssText = `color:${headerText};flex:1;`;
+    title.textContent = com.label;
+
+    const count = document.createElement('div');
+    count.className = 'comissao-count';
+    count.style.cssText = `background:rgba(0,0,0,0.2);color:${headerText};`;
+    count.textContent = events.length + ' atividade' + (events.length !== 1 ? 's' : '');
+
+    const chevron = document.createElement('div');
+    chevron.style.cssText = `color:${headerText};font-size:11px;opacity:0.7;margin-left:10px;transition:transform 0.25s;`;
+    chevron.textContent = '▼';
+
+    hdr.appendChild(swatch);
+    hdr.appendChild(title);
+    hdr.appendChild(count);
+    hdr.appendChild(chevron);
+    section.appendChild(hdr);
+
+    // Collapsible list
+    const list = document.createElement('div');
+    list.className = 'comissao-events';
+    list.style.cssText = `display:none;`;
+
+    events.forEach(({date, txt}) => {
+      const row = document.createElement('div');
+      row.className = 'comissao-event-row';
+
+      const dateEl = document.createElement('div');
+      dateEl.className = 'comissao-event-date';
+      const weekdays = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+      dateEl.textContent = weekdays[date.getDay()] + ', ' + date.getDate() + ' ' + MESES_NOMES[date.getMonth()];
+
+      const txtEl = document.createElement('div');
+      txtEl.className = 'comissao-event-txt';
+      txtEl.textContent = txt;
+
+      row.appendChild(dateEl);
+      row.appendChild(txtEl);
+      list.appendChild(row);
+    });
+
+    // Toggle on header click
+    hdr.addEventListener('click', () => {
+      const isOpen = list.style.display !== 'none';
+      list.style.display = isOpen ? 'none' : 'flex';
+      list.style.flexDirection = 'column';
+      chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+    });
+
+    section.appendChild(list);
+    body.appendChild(section);
+  });
+}
+
+function openComissao() {
+  buildComissao();
+  document.getElementById('modal-comissao').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeComissao() {
+  document.getElementById('modal-comissao').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeComissao(); });
+
+buildCalendario();
+document.getElementById('progress-fill').style.width='0%';
+</script>
+</body>
+</html>
